@@ -20,12 +20,6 @@ from fastapi import FastAPI
 from pathlib import Path
 
 
-# Serve index.html at root
-@app.get("/", response_class=HTMLResponse)
-def serve_homepage():
-    html_path = Path("static/index.html")
-    return HTMLResponse(content=html_path.read_text(), status_code=200)
-
 # Response models
 class PairingResponse(BaseModel):
     white: str
@@ -240,20 +234,26 @@ app = FastAPI(
 # Mount static folder
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Serve index.html at root
+@app.get("/", response_class=HTMLResponse)
+def serve_homepage():
+    html_path = Path("static/index.html")
+    return HTMLResponse(content=html_path.read_text(), status_code=200)
 
-@app.get("/")
-async def root():
-    """Root endpoint with API information"""
-    return {
-        "message": "BBP Pairings FastAPI Server",
-        "version": "1.0.0",
-        "built": datetime.now().strftime('%b %d %Y %H:%M:%S'),
-        "endpoints": {
-            "POST /pairings": "Generate next round pairings",
-            "POST /check": "Check tournament data validity",
-            "GET /info": "Get API information"
-        }
-    }
+
+# @app.get("/")
+# async def root():
+#     """Root endpoint with API information"""
+#     return {
+#         "message": "BBP Pairings FastAPI Server",
+#         "version": "1.0.0",
+#         "built": datetime.now().strftime('%b %d %Y %H:%M:%S'),
+#         "endpoints": {
+#             "POST /pairings": "Generate next round pairings",
+#             "POST /check": "Check tournament data validity",
+#             "GET /info": "Get API information"
+#         }
+#     }
 
 @app.get("/info")
 async def get_info():
