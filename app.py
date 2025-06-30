@@ -14,6 +14,18 @@ from pydantic import BaseModel
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
+from pathlib import Path
+
+
+# Serve index.html at root
+@app.get("/", response_class=HTMLResponse)
+def serve_homepage():
+    html_path = Path("static/index.html")
+    return HTMLResponse(content=html_path.read_text(), status_code=200)
+
 # Response models
 class PairingResponse(BaseModel):
     white: str
@@ -224,6 +236,10 @@ app = FastAPI(
     description="BBP Pairings - JSON-based Tournament Pairing System",
     version="1.0.0"
 )
+
+# Mount static folder
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/")
 async def root():
