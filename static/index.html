@@ -203,6 +203,7 @@
                     <th>Rank</th>
                     <th>Player</th>
                     <th>Score</th>
+                    <th>Buchholz</th>
                     <th>Rating</th>
                     <th>Games</th>
                 </tr>
@@ -245,7 +246,8 @@
                 score: 0.0,
                 color_history: [],
                 opponents: [],
-                has_bye: false
+                has_bye: false,
+                buchholz: 0.0
             };
 
             // Handle late joiners
@@ -288,13 +290,18 @@
                 return;
             }
 
+           // Calculate Buchholz for display
+            players.forEach(player => {
+                player.buchholz = calculateBuchholz(player);
+            });
+
             playersList.innerHTML = players.map(player => 
                 `<div class="player-item">
-                    <strong>${player.id}</strong> - Rating: ${player.rating} - Score: ${player.score}
+                    <strong>${player.id}</strong> - Rating: ${player.rating} - Score: ${player.score} - Buchholz: ${player.buchholz.toFixed(1)}
                     ${player.has_bye ? ' <span style="color: #17a2b8;">(Had Bye)</span>' : ''}
                     <button onclick="removePlayer('${player.id}')" style="float: right; background: #dc3545;">Remove</button>
                 </div>`
-            ).join('');
+           ).join('');
         }
 
         function removePlayer(playerId) {
@@ -462,13 +469,30 @@
             showMessage(`Round ${currentRound} results submitted. Ready for next round.`, 'success');
         }
 
+        function calculateBuchholz(player) {
+            let buchholz = 0.0;
+            for (const opponentId of player.opponents) {
+                const opponent = players.find(p => p.id === opponentId);
+                if (opponent) {
+                    buchholz += opponent.score;
+                }
+            }
+            return buchholz;
+        }
+
         function updateStandings() {
             const standingsContainer = document.getElementById('standingsContainer');
             const standingsBody = document.getElementById('standingsBody');
             
-            // Sort players by score (desc), then rating (desc)
+            // Calculate Buchholz for all players
+            players.forEach(player => {
+                player.buchholz = calculateBuchholz(player);
+            });
+    
+            // Sort players by score (desc), then Buchholz (desc), then rating (desc)
             const sortedPlayers = [...players].sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
+                if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
                 return b.rating - a.rating;
             });
             
@@ -479,6 +503,7 @@
                         <td>${index + 1}</td>
                         <td>${player.id}</td>
                         <td>${player.score}</td>
+                        <td>${player.buchholz.toFixed(1)}</td>
                         <td>${player.rating}</td>
                         <td>${player.color_history.length}</td>
                     </tr>`;
