@@ -71,6 +71,7 @@ class Player:
     color_balance: int = 0  # positive = more whites, negative = more blacks
     preferred_color: Color = Color.NONE
     has_bye: bool = False  # Track if player has received a bye
+    buchholz: float = 0.0  # Buchholz tiebreaker score
     
     def __post_init__(self):
         self.calculate_color_balance()
@@ -131,14 +132,30 @@ class Tournament:
             max_games = max(len(p.color_history) for p in self.players) if self.players else 0
             self.current_round = max_games + 1
     
+    def calculate_buchholz(self):
+        """Calculate Buchholz scores for all players"""
+        # Create a lookup dict for quick score access
+        player_scores = {p.id: p.score for p in self.players}
+    
+        for player in self.players:
+            buchholz_sum = 0.0
+            for opponent_id in player.opponents:
+                if opponent_id in player_scores:
+                    buchholz_sum += player_scores[opponent_id]
+            player.buchholz = buchholz_sum
+
     def update_ranks(self):
-        """Update player rankings based on score and rating"""
-        # Sort by score (descending), then by rating (descending)
-        self.players.sort(key=lambda p: (-p.score, -p.rating))
-        
+        """Update player rankings based on score, Buchholz, and rating"""
+        # Calculate Buchholz scores first
+        self.calculate_buchholz()
+    
+        # Sort by score (desc), then Buchholz (desc), then rating (desc)
+        self.players.sort(key=lambda p: (-p.score, -p.buchholz, -p.rating))
+    
         # Assign ranks
         for i, player in enumerate(self.players):
             player.rank = i + 1
+            
 
 class SwissPairingEngine:
     def __init__(self, swiss_system: SwissSystem = SwissSystem.DUTCH):
@@ -356,6 +373,7 @@ async def check_tournament(tournament_data: TournamentInput):
                 "id": player.id,
                 "rating": player.rating,
                 "score": player.score,
+                "buchholz": player.buchholz,
                 "rank": player.rank,
                 "color_balance": player.color_balance,
                 "games_played": len(player.color_history),
